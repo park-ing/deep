@@ -1,0 +1,355 @@
+<head>
+  <meta charset="UTF-8">
+  <title>DWM</title>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='asset/css/style.css')}}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='asset/css/loadingBar.css')}}">
+  <script>if (window.module) module = window.module;</script>
+
+  <script>
+    if (typeof module === 'object') {
+      window.module = module;
+      module = undefined;
+    }
+  </script>
+
+  <script src="{{url_for('static', filename='asset/js/jsmpeg.min.js')}}"></script>
+  <script src="{{url_for('static', filename='asset/js/jquery/dist/jquery.min.js')}}"></script>
+
+  <script>
+	var myCanvas = document.getElementById('myCanvas');
+        var ctx = myCanvas.getContext('2d');
+
+	function showFileBox() {
+        	//var picture =ctx.drawImage(video, 0,0, myCanvas.width, myCanvas.height);
+		const { dialog } = require('electron').remote;
+      		dialog.showOpenDialog((fileNames) => {
+        		if (fileNames === undefined) {
+          			return;
+        		}
+        		document.getElementById("path").value = fileNames[0]
+        		document.getElementById("filename").innerHTML = fileNames[0]
+      		});
+    	}
+
+    	function download_img(el) {
+      		var image = videoCanvas.toDataURL("image/png").replace("image/png", "image/octet-stream");
+      		window.location.href = image;
+    	}
+
+    	function snapshot() {
+
+		// make loading bar visible
+		$('.loading-layer').attr('style', 'visibility:visible;');
+
+		$('#PE').attr('src', "/static/asset/image/pe-2.png");
+                $('#PS').attr('src', "/static/asset/image/ps-2.png");
+                $('#PP').attr('src', "/static/asset/image/pp-2.png");
+
+                $('#pe').prop('checked', false);
+                $('#ps').prop('checked', false);
+                $('#pp').prop('checked', false);
+
+	    const Recorder = require('node-rtsp-recorder').Recorder;
+
+	    var date = new Date();
+	    var dateStr = date.getFullYear() + "_" + ((date.getMonth()+1)<10?'0':'') + (date.getMonth()+1) + "_" + (date.getDate()<10?'0':'') + date.getDate() + "_" + (date.getHours()<10?'0':'') + date.getHours() + ":" + (date.getMinutes()<10?'0':'') + date.getMinutes() + ":" + (date.getSeconds()<10?'0':'') + date.getSeconds();
+
+		//console.log(dateStr);
+
+	    var rec = new Recorder({
+        		url: 'rtsp://admin:cctv1234567890@111.111.111.112/Streaming/Channels/102',
+        		folder: '/home/kimm/Desktop/DWM_Plastic/engine/dist/static',
+        		name: 'jetson',
+        		type: 'image',
+			directoryPathFormat: '[temp]',
+		    fileNameFormat: `[${dateStr}]`,
+		});
+
+	    rec.captureImage(() => {
+
+		    // get file
+		    console.log(rec.getDirectoryPath());
+		    console.log(rec.getFilename(rec.getDirectoryPath()));
+		    var fileSplitList = rec.getFilename(rec.getDirectoryPath()).split('/');
+
+		    //console.log(rec.getFilename(rec.getDirectoryPath()).split('/')[fileSplitList.length-1]);
+
+		    // show captureImage
+		    //$('#snapshotImage').attr('src', "/static/jetson/temp/image/" + rec.getFilename(rec.getDirectoryPath()).split('/')[fileSplitList.length-1]);
+
+		    $('#snapshotImage').attr('src', "/static/jetson/temp/image/" + dateStr + ".jpg");
+
+		    // save fileName
+		    $('#snapshotFileName').attr('value', dateStr + ".jpg");
+
+		    // call post request using ajax
+		    $.ajax({
+			type: 'POST',
+			url: '/capture',
+			data:{
+				url: rec.getDirectoryPath() + "/temp/image/" + dateStr + ".jpg",
+				functionType: "capture"
+			},
+			dataType:'JSON',
+			success: function(result) {
+				console.log(result.preds);
+				console.log(result.img);
+				console.log(result.destination);
+				// change imgCanvas capture image
+
+
+				// change plastic result
+				if (result.preds == "PP") {
+					// all down
+					//$('#PE').attr('src', "/static/asset/image/pe-2.png");
+					//$('#PS').attr('src', "/static/asset/image/ps-2.png");
+					$('#PP').attr('src', "/static/asset/image/pp.png");
+
+					//$('#pe').attr('checked', false);
+					//$('#ps').attr('checked', false);
+					//$('#pp').attr('checked', false);
+
+					$('#pp').prop('checked', true);
+				}
+				if (result.preds == "PE") {
+					$('#PE').attr('src', "/static/asset/image/pe.png");
+					//$('#PS').attr('src', "/static/asset/image/ps-2.png");
+					//$('#PP').attr('src', "/static/asset/image/pp-2.png");
+
+					//$('#pe').attr('checked', false);
+                                        //$('#ps').attr('checked', false);
+                                        //$('#pp').attr('checked', false);
+
+                                        $('#pe').prop('checked', true);
+				}
+				if (result.preds == "PS") {
+					//$('#PE').attr('src', "/static/asset/image/pe-2.png");
+					$('#PS').attr('src', "/static/asset/image/ps.png");
+					//$('#PP').attr('src', "/static/asset/image/pp-2.png");
+
+					//$('#pe').attr('checked', false);
+                                        //$('#ps').attr('checked', false);
+                                        //$('#pp').attr('checked', false);
+
+                                        $('#ps').prop('checked', true);
+				}
+
+				// make loading bar hidden
+				$('.loading-layer').attr('style', 'visibility:hidden;');
+
+				//window.alert('finish');
+			},
+			error: function(error){
+				console.log(error);
+			}
+		    });
+	    });
+
+    	}
+
+	// for save img file whether correct, incorrect
+	function saveImage() {
+
+		//$('.loading-layer').attr('style', 'visibility: visible;');
+
+		var checkedClass = "";
+		if ($('#pp').is(':checked')) {
+			checkedClass = "PP"
+		}
+		if ($('#pe').is(':checked')) {
+                        checkedClass = "PE"
+                }
+		if ($('#ps').is(':checked')) {
+                        checkedClass = "PS"
+                }
+
+		// post request to '/save'
+		$.ajax({
+			type: 'POST',
+			url: '/save',
+			data: {
+				fileName: $('#snapshotFileName').val(),
+				checkClass: checkedClass,
+				functionType: "save"
+			},
+			dataType: 'JSON',
+			success: function(result) {
+				console.log(11);
+				console.log(result.result);
+				//$('.loading-layer').attr('style', 'visibility: hidden;');
+
+				window.alert(result.result);
+				//console.log(result);
+			},
+			error: function(error) {
+				console.log(22);
+				console.log(error);
+			}
+
+		});
+	}
+
+    function init() {
+      // Get the canvas and obtain a context for
+      // drawing in it
+      var myCanvas = document.getElementById("myCanvas");
+    }
+  </script>
+
+</head>
+
+<body onload="init();">
+  <nav class="navbar nav">
+    <div class="container">
+      <!-- <button class="btn btn-warning"><a style="color:white;" href="http://127.0.0.1:5000/">Object Detecion</a></button> -->
+      <a href="">
+				<img class="navbar-brand logo" src="/static/asset/image/logo.png" /></a>
+      <h1 class="title"> 인공지능기반 플라스틱 분류 시스템 v0.5</h1>
+    </div>
+  </nav>
+
+  <div class="loading-layer" style="visibility:visible"></div>
+
+  <div class='container'>
+    
+    <!-- 분석 비디오 화면 -->
+    <div class="row videoContainer">
+	<div class="col-xs-6" width="555" height="400" > 
+      	 <canvas id='videoCanvas'></canvas>
+	</div>
+
+
+        <!-- 캡쳐화면 -->
+        <div class="col-xs-6" width ="555" height="400">
+	
+	<div id = "imageCanvasDiv"> <img id="snapshotImage" src="/static/asset/image/ready.jpg" width="555" height="400" />
+	</div>
+	  
+	</div>
+    </div>
+
+   <!-- 분석하기 버튼 -->
+    <div class="row">
+      <a class="btn btnSuccess" id="download" onclick="snapshot()">분류하기 </a>
+   <!--   <button onclick="showFileBox()" class="btn btn-success">Select Image</button>
+    <p id="filename"></p>
+    
+     <button href="http://127.0.0.1:5000/save" class="btn btn-success">Select Image</button> -->
+
+<!-- <button class="btn btn-success" onclick="result1();">분석2</butt석on>  -->
+
+  <!--  <form method='POST'>
+      <script>var picture =ctx.drawImage(video, 0,0, canvas.width, canvas.height);</script> 
+      <input type="text" value="" name="path" id="path" style="display: none"></input>
+      <button type="submit" id="ob_detect" class="btn btn-warning">Go!</button>
+  </form>-->
+    
+    </div>
+    
+    <div class='row infoContainer'>
+      <!-- 설명 기입 -->
+      <div class="col-xs-6">
+        <h3>제품 소개</h3>
+        본 시스템은 인공지능 학습 기반의 플라스틱 분류 시스템입니다. <br/>
+        영상 분석을 통해 플라스틱 분류가 가능하며 학습 데이터 확보에 활용이 가능합니다.
+
+        <h3>사용 설명</h3>
+        <!--1. 좌측 상단의 기계연 로고 클릭시 새로고침. <br/>
+        2. 분석하기 버튼 누르면 영상 캡쳐 및 해당 이미지 분석. <br/>
+        3. 분석결과가 틀릴경우 결과수정 부분에서 수정 가능.<br/>
+	4. 다운로드 클릭시 해당 카테고리의 폴더로 수집. -->
+	[Step 1] 영상을 통해 플라스틱 이미지를 받아 [PP] [PE] [PS]로 분류<br/>
+	[Step 2] 영상분석 결과 확인 후 저장<br/>
+	• 영상분석 정상: correct 폴더에 하위 pp, pe ,ps 폴더에 분류 결과 이미지 저장<br/>
+	• 영상분석 오류: incorrect 폴더에 하위 pp, pe ,ps 폴더에 실제 분류 기준으로 이미지 저장<br/>
+	(예시)<br/>
+	실제 분류 : PS, 예측 분류 : PS -> correct폴더 내부의 PS 폴더에 이미지 저장<br/>
+	실제 분류 : PP, 예측 분류 : PE -> incorrect폴더 내부의 PP 폴더에 이미지 저장<br/>
+
+	<h3>주의 사항</h3>
+	시스템 종료 후 장치 전원을 OFF해 주세요. </br>
+
+	<input type="text" id="snapshotFileName" style="visibility: hidden" value="test">
+
+      </div>
+
+      <div class="col-xs-6">
+
+        <!-- 분석결과 -->
+          <h3>분류결과</h3>
+          <div class="row result">
+            <div class="col-xs-6 col-sm-4">
+              <img class="resImage" src="/static/asset/image/pp-2.png" id="PP"/>
+              <!-- <button class="btn btn-result" id="PP">PP</button> -->
+            </div>
+
+            <div class="col-xs-6 col-sm-4">
+              <img class="resImage" src="/static/asset/image/pe-2.png" id="PE"/>
+              <!-- <button class="btn btn-result" id="PE">PE</button> -->
+            </div>
+
+            <div class="col-xs-6 col-sm-4">
+              <img class="resImage" src="/static/asset/image/ps-2.png" id="PS"/>
+              <!-- <button class="btn btn-result" id="PS">PS</button> -->
+            </div>
+          </div>
+        
+
+	  <!--<form method="POST"> -->
+
+        	<h3>결과수정</h3>
+        	<!-- 수정하기 -->
+        	<div class="row update">
+
+        		<label class="col-xs-6 col-sm-4 box-radio-input">
+				<input type="radio" name="checkClass" id="pp" value="PP" class="radioBtn">
+            			<span>PP</span>
+          		</label>
+
+	          	<label class="col-xs-6 col-sm-4 box-radio-input">
+				<input type="radio" name="checkClass" id="pe" value="PE"  class="radioBtn">
+            			<span>PE</span>
+	          	</label>
+
+        	  	<label class="col-xs-6 col-sm-4 box-radio-input">
+				<input type="radio" name="checkClass" id="ps" value="PS"  class="radioBtn">
+	            		<span>PS</span>
+        	  	</label>
+        	</div>
+
+   
+       		<a  id="ob_detect" onclick="saveImage()" class="btn btnSuccess"> 다운로드 </a>
+		<!-- </form> -->
+
+      <!--  <a
+          class='btn btnSuccess'
+          id="download"
+          download="result.jpg"
+          href="http://127.0.0.1:5000/save"
+        >
+        다운로드
+      </a> -->
+
+      </div>
+    </div>
+
+  <script type="text/javascript">
+    var videoCanvas = document.getElementById('videoCanvas');
+    //var videoCtx = videoCanvas.getContext('2d');
+    window.onload = function() {
+	    $('.loading-layer').attr('style', 'visibility:hidden;');
+
+	    var player = new JSMpeg.Player('ws://111.111.111.100:9999', {
+                    canvas: videoCanvas // Canvas should be a canvas DOM element
+            });
+                //setTimeout(function() {
+		//	$('.loading-layer').attr('style', 'visibility:hidden');
+                 //       var player = new JSMpeg.Player('ws://111.111.111.100:9999', {
+                 //       	canvas: videoCanvas // Canvas should be a canvas DOM element
+               // 	})
+               // }, 500);
+    }
+  </script>
+
+</body>
