@@ -23,3 +23,7 @@ def load_data(seed=1984):
             t[ix, j] = 1
 
     return x, t
+
+
+
+print()
