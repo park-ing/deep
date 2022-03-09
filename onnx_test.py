@@ -34,3 +34,5 @@ print(pred_onnx)
 
 print(rt.get_device())
 print(np.argmax(pred_onnx))
+
+print()
