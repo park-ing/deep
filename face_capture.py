@@ -2,6 +2,7 @@ import sys
 import numpy as np
 import cv2
 
+
 '''
 # 녹색 배경 동영상
 cap1 = cv2.VideoCapture('woman.mp4')
