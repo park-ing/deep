@@ -4,3 +4,4 @@ def test(x):
 1 % 10 == 1
 
 print("true")
+print("tt")
