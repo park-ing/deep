@@ -26,3 +26,4 @@ def load_data(seed=1984):
 
 
 
+print()
